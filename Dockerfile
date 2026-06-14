@@ -1,9 +1,9 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod download
+COPY vendor ./vendor
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o leads-engine ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o leads-engine ./cmd/server
 
 FROM alpine:3.20
 RUN apk --no-cache add ca-certificates tzdata

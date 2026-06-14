@@ -29,8 +29,8 @@ Thumbs.db
 coverage.out
 coverage.html
 
-# Go vendor (if not committed)
-# vendor/
+# Go vendor — not committed, generated locally for builds
+vendor/
 
 # Docker volumes / local data
 pgdata/
