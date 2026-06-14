@@ -1,0 +1,38 @@
+services:
+  leads-engine:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Asynq Web UI — monitor job queues at http://localhost:8081
+  asynqmon:
+    image: hibiken/asynqmon:latest
+    platform: linux/amd64
+    ports:
+      - "8081:8080"
+    environment:
+      REDIS_ADDR: redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
