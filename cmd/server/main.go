@@ -40,19 +40,30 @@ func main() {
 	slog.Info("database connected")
 
 	// ── Redis ─────────────────────────────────────────────────────────────
-	redisAddr := os.Getenv("REDIS_URL")
-	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
 	}
-	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
+	parsedRedis, err := redis.ParseURL(redisURL)
+	if err != nil {
+		slog.Error("invalid REDIS_URL", "err", err)
+		os.Exit(1)
+	}
+	rdb := redis.NewClient(parsedRedis)
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		slog.Warn("redis ping failed — jobs will be queued locally", "err", err)
 	} else {
-		slog.Info("redis connected", "addr", redisAddr)
+		slog.Info("redis connected", "addr", parsedRedis.Addr)
 	}
 	rdb.Close()
 
-	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}
+	redisOpt := asynq.RedisClientOpt{
+		Addr:     parsedRedis.Addr,
+		Username: parsedRedis.Username,
+		Password: parsedRedis.Password,
+		DB:       parsedRedis.DB,
+		TLSConfig: parsedRedis.TLSConfig,
+	}
 	queueClient := asynq.NewClient(redisOpt)
 	defer queueClient.Close()
 
