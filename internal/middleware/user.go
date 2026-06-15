@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"encoding/base64"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,27 +42,22 @@ func extractUserID(r *http.Request) string {
 	}
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
-	secret := os.Getenv("SUPABASE_JWT_SECRET")
+	secret := strings.Trim(strings.TrimSpace(os.Getenv("SUPABASE_JWT_SECRET")), `"`)
 	if secret == "" {
 		slog.Warn("auth: SUPABASE_JWT_SECRET not set")
 		return ""
 	}
-
-	// Supabase JWT secrets are base64-encoded — decode to raw bytes before verifying.
-	// Falling back to the raw string handles plain-text secrets in local dev.
-	keyBytes, err := base64.StdEncoding.DecodeString(secret)
-	if err != nil {
-		keyBytes = []byte(secret)
-	}
+	slog.Debug("auth: attempting JWT parse", "secretLen", len(secret), "tokenLen", len(tokenStr))
 
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			slog.Warn("auth: unexpected signing method", "alg", t.Header["alg"])
 			return nil, jwt.ErrSignatureInvalid
 		}
-		return keyBytes, nil
+		return []byte(secret), nil
 	}, jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
-		slog.Warn("auth: JWT validation failed", "err", err)
+		slog.Warn("auth: JWT validation failed", "err", err, "secretLen", len(secret))
 		return ""
 	}
 
