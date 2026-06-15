@@ -135,7 +135,7 @@ func main() {
 
 		r.Mount("/lead-campaigns", campaign.NewHandler(campaignSvc).Routes())
 		r.Mount("/discovered-leads", leads.NewHandler(leadsSvc).Routes())
-		r.Mount("/vault", vault.NewHandler(vaultSvc, registry).Routes())
+		r.Mount("/lead-vault", vault.NewHandler(vaultSvc, registry).Routes())
 
 		// Convenience: GET /lead-campaigns/:id with embedded leads (used by results page)
 		r.Get("/lead-campaigns/{id}/full", func(w http.ResponseWriter, r *http.Request) {
