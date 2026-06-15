@@ -130,15 +130,15 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	r.Group(func(r chi.Router) {
+	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(mw.InjectUserID)
 
-		r.Mount("/campaigns", campaign.NewHandler(campaignSvc).Routes())
-		r.Mount("/leads", leads.NewHandler(leadsSvc).Routes())
+		r.Mount("/lead-campaigns", campaign.NewHandler(campaignSvc).Routes())
+		r.Mount("/discovered-leads", leads.NewHandler(leadsSvc).Routes())
 		r.Mount("/vault", vault.NewHandler(vaultSvc, registry).Routes())
 
-		// Convenience: GET /campaigns/:id with embedded leads (used by results page)
-		r.Get("/campaigns/{id}/full", func(w http.ResponseWriter, r *http.Request) {
+		// Convenience: GET /lead-campaigns/:id with embedded leads (used by results page)
+		r.Get("/lead-campaigns/{id}/full", func(w http.ResponseWriter, r *http.Request) {
 			uid := mw.UserID(r.Context())
 			id := chi.URLParam(r, "id")
 
