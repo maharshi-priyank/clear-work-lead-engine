@@ -6,6 +6,8 @@ primary_region = "sin"   # Singapore — closest available to Supabase ap-south-
 
 [env]
   PORT = "8080"
+  # CORS_ORIGIN is set as a Fly secret — comma-separated list of allowed origins
+  # e.g. "https://leads.getclearwork.in,https://app.getclearwork.in"
 
 [http_service]
   internal_port       = 8080

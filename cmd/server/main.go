@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,6 +24,35 @@ import (
 	"github.com/amplexo/clearwork-leads-engine/internal/providers"
 	"github.com/amplexo/clearwork-leads-engine/internal/vault"
 )
+
+// corsMiddleware reads allowed origins from the CORS_ORIGIN env var
+// (comma-separated list, e.g. "https://leads.getclearwork.in,http://localhost:5173").
+func corsMiddleware(next http.Handler) http.Handler {
+	rawOrigins := os.Getenv("CORS_ORIGIN")
+	allowed := make(map[string]bool)
+	for _, o := range strings.Split(rawOrigins, ",") {
+		o = strings.TrimSpace(o)
+		if o != "" {
+			allowed[o] = true
+		}
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" && (allowed[origin] || len(allowed) == 0) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-User-ID")
+		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
 	_ = godotenv.Load()
@@ -90,6 +120,7 @@ func main() {
 
 	// ── HTTP router ───────────────────────────────────────────────────────
 	r := chi.NewRouter()
+	r.Use(corsMiddleware)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
